@@ -1,9 +1,6 @@
 import numpy as np
 import logging
-import os
-import pathlib
 from numba import jit
-from tqdm import tqdm
 from sklearn.decomposition import PCA
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
@@ -11,7 +8,6 @@ from shapely.geometry.polygon import Polygon
 from upcp.region_growing import LabelConnectedComp
 from upcp.labels import Labels
 from upcp.utils.interpolation import FastGridInterpolator
-from upcp.utils import las_utils
 from upcp.utils import clip_utils
 from upcp.utils import math_utils
 
@@ -25,7 +21,7 @@ DEBUG_INFO = {0: 'No errors',
 
 
 @jit(nopython=True)
-def get_xystd(points, z, margin):
+def _get_xystd(points, z, margin):
     """Returns the mean and std.dev. of `points` within `margin` of `z`."""
     clip_mask = (points[:, 2] >= z - margin) & (points[:, 2] < z + margin)
     if np.count_nonzero(clip_mask) > 0:
@@ -38,7 +34,7 @@ def get_xystd(points, z, margin):
         return np.nan, np.nan, z, np.nan
 
 
-def extract_pole(points, ground_est=None, step=0.1, percentile=25):
+def _extract_pole(points, ground_est=None, step=0.1, percentile=25):
     """
     Extract pole features from a set of points. The supplied points are assumed
     to contain one pole-shaped object. If a `ground_est` is provided this is
@@ -54,9 +50,14 @@ def extract_pole(points, ground_est=None, step=0.1, percentile=25):
         ground_est = z_min
     elif np.isnan(ground_est):
         ground_est = z_min
-    xyzstd = np.array([[*get_xystd(points, z, step)]
+
+    # Collect [x_mean, y_mean, z, std_dev] statistics for horizontal slices of
+    # the point cloud.
+    xyzstd = np.array([[*_get_xystd(points, z, step)]
                        for z in np.arange(z_min + step, z_max, 2*step)])
     if len(xyzstd) > 0:
+        # Keep only those slices of which the std_dev is < 25th percentile.
+        # This makes sure we only focus on the pole itself, not any extensions.
         valid_mask = xyzstd[:, 3] <= np.nanpercentile(xyzstd[:, 3], percentile)
     else:
         valid_mask = np.zeros((len(points),), dtype=bool)
@@ -71,11 +72,13 @@ def extract_pole(points, ground_est=None, step=0.1, percentile=25):
         origin = xyzstd[valid_mask, 0:3][0]
         direction_vector = np.array([0., 0., 1.])
     else:
+        # We have enough data to try a PCA fit to determine the exact pole.
         pca = PCA(n_components=1).fit(xyzstd[valid_mask, 0:3])
         origin = pca.mean_
         direction_vector = pca.components_[0]
         if direction_vector[2] < 0:
             direction_vector *= -1
+    # Compute the pole dimensions from the fitted data.
     extent = (origin[2] - ground_est, z_max - origin[2])
     multiplier = np.sum(np.linalg.norm(direction_vector, 2))
     x, y, z = origin - direction_vector * extent[0] * multiplier
@@ -86,7 +89,7 @@ def extract_pole(points, ground_est=None, step=0.1, percentile=25):
 
 
 def get_pole_locations(
-        points, labels, probabilities, target_label, ground_label,
+        points, labels, probabilities, target_label, ground_labels,
         ahn_reader=None, tilecode=None, building_polygons=None,
         min_component_size=100, octree_grid_size=0.2):
     """
@@ -103,14 +106,14 @@ def get_pole_locations(
         The corresponding probabilities.
     target_label : int
         The label of the target class.
-    ground_label : int
-        The label of the ground class, for height determination.
+    ground_labels : list of int
+        The label(s) of the ground class(es), for height determination.
     ahn_reader : AHNReader, optional
         To extract the ground elevation, if this cannot be determined from the
         labelled point cloud itself. Fall-back method.
     tilecode : str, optional
         Only needed when ahn_reader is provided.
-    building_polygons : list, optional
+    building_polygons : list of Shapely Polygons, optional
         Used to flag whether extracted pole is inside a building.
     min_component_size : int (default: 100)
         Minimum size of a component to be considered.
@@ -128,20 +131,16 @@ def get_pole_locations(
     mask_ids = np.where(labels == target_label)[0]
 
     if len(mask_ids) > 0:
-        octree_level = math_utils.get_octree_level(
-                            points[mask_ids], octree_grid_size)
         noise_components = (LabelConnectedComp(
-                                octree_level=octree_level,
+                                grid_size=octree_grid_size,
                                 min_component_size=10)
                             .get_components(points[mask_ids]))
         noise_filter = noise_components != -1
         if np.count_nonzero(noise_filter) < min_component_size:
             return pole_locations
-        octree_level = math_utils.get_octree_level(
-                        points[mask_ids[noise_filter], 0:2], octree_grid_size)
         point_components = (LabelConnectedComp(
-                                octree_level=octree_level,
-                                min_component_size=min_component_size)
+                                        grid_size=octree_grid_size,
+                                        min_component_size=min_component_size)
                             .get_components(points[mask_ids[noise_filter],
                                                    0:2]))
 
@@ -152,7 +151,9 @@ def get_pole_locations(
         logger.info(f'{len(cc_labels)} objects of class ' +
                     f'[{Labels.get_str(target_label)}] found.')
 
-        ground_mask = labels == ground_label
+        ground_mask = np.zeros_like(labels, dtype=bool)
+        for gnd_lab in ground_labels:
+            ground_mask = ground_mask | (labels == gnd_lab)
 
         if building_polygons is not None:
             polys = [Polygon(bld) for bld in building_polygons]
@@ -192,7 +193,7 @@ def get_pole_locations(
                         ground_debug = 2
                     else:
                         ground_est = np.nanmean(z_vals)
-            pole, pole_debug = extract_pole(
+            pole, pole_debug = _extract_pole(
                         points[mask_ids[noise_filter]][cc_mask], ground_est)
             dims = tuple(round(x, 2) for x in pole)
             proba = np.mean(probabilities[mask_ids[noise_filter]][cc_mask])
@@ -206,93 +207,3 @@ def get_pole_locations(
             dims = (*dims, round(proba, 2), n_points, in_building, debug)
             pole_locations.append(dims)
     return pole_locations
-
-
-def get_pole_locations_pred(cloud_folder, pred_folder, target_label,
-                            ground_label, tilecodes=None,
-                            ahn_reader=None, bld_reader=None,
-                            cloud_prefix='filtered', pred_prefix='pred',
-                            min_component_size=100, hide_progress=False):
-    """
-    Returns a list of locations and dimensions of pole-like objects
-    corresponding to the target_label for all point clouds in a folder.
-
-    Parameters
-    ----------
-    cloud_folder : str
-        The folder containing the point clouds.
-    pred_folder : str
-        The folder containing the predicted labels (can be the same as
-        `cloud_folder`).
-    target_label : int
-        The label of the target class.
-    ground_label : int
-        The label of the ground class, for height determination.
-    ahn_reader : AHNReader, optional
-        To extract the ground elevation, if this cannot be determined from the
-        labelled point cloud itself. Fall-back method.
-    bld_reader : BGTPolyReader, optional
-        When provided, polygons from the BGT will be used to flag whether an
-        extracted pole is inside a building.
-    cloud_prefix : str (default: 'filtered')
-        Prefix of point cloud files.
-    predd_prefix : str (default: 'pred')
-        Prefix of LAS files with predicted labels. Can be the same as
-        `cloud_prefix` if the point cloud files are labelled.
-    min_component_size : int (default: 100)
-        Minimum size of a component to be considered.
-    octree_level : int (default: 6)
-        Octree level for the LabelConnectedComp algorithm.
-
-    Returns
-    -------
-    A list of tuples, one for each pole-like object: (x, y, z, height).
-    """
-
-    locations = []
-
-    if tilecodes is None:
-        cloud_files = list(pathlib.Path(cloud_folder)
-                           .glob(cloud_prefix + "_*.laz"))
-        pred_files = list(pathlib.Path(pred_folder)
-                          .glob(pred_prefix + "_*.laz"))
-        tilecodes = set([las_utils.get_tilecode_from_filename(f.name)
-                         for f in cloud_files])
-        tilecodes = list(tilecodes.intersection(set(
-                                [las_utils.get_tilecode_from_filename(f.name)
-                                 for f in pred_files])))
-    files_tqdm = tqdm(tilecodes, unit="file", disable=hide_progress,
-                      smoothing=0)
-    logger.debug(f'{len(tilecodes)} files found.')
-
-    for tilecode in files_tqdm:
-        files_tqdm.set_postfix_str(tilecode)
-        logger.info(f'Processing tile {tilecode}...')
-
-        pointcloud_pred = las_utils.read_las(os.path.join(
-            pred_folder, pred_prefix + '_' + tilecode + '.laz'))
-        labels = pointcloud_pred.label
-        if 'probability' in pointcloud_pred.point_format.extra_dimension_names:
-            probabilities = pointcloud_pred.probability
-        else:
-            probabilities = np.zeros_like(labels)
-
-        if np.count_nonzero(labels == target_label) > 0:
-            if ((cloud_folder == pred_folder)
-                    and (cloud_prefix == pred_prefix)):
-                pointcloud = pointcloud_pred
-            else:
-                pointcloud = las_utils.read_las(os.path.join(
-                    cloud_folder, cloud_prefix + '_' + tilecode + '.laz'))
-            points = np.vstack((pointcloud.x, pointcloud.y, pointcloud.z)).T
-            if bld_reader is not None:
-                bld_polygons = bld_reader.filter_tile(tilecode, merge=True)
-            else:
-                bld_polygons = None
-            tile_locations = get_pole_locations(
-                    points, labels, probabilities, target_label, ground_label,
-                    ahn_reader, tilecode, bld_polygons,
-                    min_component_size=min_component_size)
-            locations.extend([(*x, tilecode) for x in tile_locations])
-
-    return locations
