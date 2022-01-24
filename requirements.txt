@@ -1,7 +1,5 @@
 numba>=0.54
 numpy>=1.20
-opencv-python
 pandas>=1.3
 scikit-learn>=0.24
 shapely>=1.7
-tqdm>=4.60
