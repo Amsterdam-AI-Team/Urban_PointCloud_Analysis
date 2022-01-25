@@ -2,7 +2,7 @@
 
 This repository contains methods for the **automatic extraction of urban street furniture** from labeled PointClouds. It serves as a post-processing toolbox for our [data fusion labeling approach](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Processing), but it can also be used for point clouds that were labeled manually or by semantic segmentation algorithms, with minor modifications.
 
-This is very much work in progress: for now, we only provide code to extract pole-like objects. Further methods to extract other types of methods will follow. For demonstration purposes we provide labeled example point clouds and Jupyter [notebooks](notebooks).
+This is very much work in progress: for now, we only provide code to extract pole-like objects. Further methods to extract other types of methods will follow. For more background on this project, please have a look at our accompanying [blog post](https://amsterdamintelligence.com/posts/locating-street-lights-in-point-clouds-using-deep-learning).
 
 <figure align="center">
   <img
@@ -20,7 +20,7 @@ This is very much work in progress: for now, we only provide code to extract pol
    * [`pointcloud`](./datasets/pointcloud) _Example labeled urban point clouds_
  * [`media/examples`](./media/examples) _Visuals_
  * [`notebooks`](./notebooks) _Jupyter notebook tutorials_
- * [`src/upc_analysis`](./src/ipc_analysis) _Python source code_
+ * [`src/upc_analysis`](./src/upc_analysis) _Python source code_
 
 ---
 
@@ -51,7 +51,7 @@ This is very much work in progress: for now, we only provide code to extract pol
 
 ## Usage
 
-We provide tutorial [notebooks](notebooks) that demonstrate how the tools can be used.
+We provide tutorial [notebooks](notebooks) that demonstrate how the tools can be used. Labeled example point clouds are provided to get started.
 
 ---
 
