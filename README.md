@@ -1,4 +1,4 @@
-# Urban PointCloud Analysis
+# Extraction of urban street furniture from labeled point clouds
 
 This repository contains methods for the **automatic extraction of urban street furniture** from labeled PointClouds. It serves as a post-processing toolbox for our [data fusion labeling approach](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Processing), but it can also be used for point clouds that were labeled manually or by semantic segmentation algorithms, with minor modifications.
 
