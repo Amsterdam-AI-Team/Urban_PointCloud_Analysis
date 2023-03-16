@@ -2,29 +2,32 @@ import numpy as np
 import logging
 from numba import jit
 from sklearn.decomposition import PCA
+from sklearn.cluster import DBSCAN 
 from shapely.geometry import Point
+import smallestenclosingcircle 
 
-from upcp.region_growing import LabelConnectedComp
-from upcp.labels import Labels
+#from upcp.labels import Labels  # TODO change back with the below
+from labels import Labels
 from upcp.utils.interpolation import FastGridInterpolator
 from upcp.utils import clip_utils
 from upcp.utils import math_utils
 
 logger = logging.getLogger(__name__)
-
-
-@jit(nopython=True)
+ 
+    
+#@jit(nopython=True)
 def _get_xystd(points, z, margin):
-    """Returns the mean and std.dev. of `points` within `margin` of `z`."""
+    """Returns the center and std.dev. of `points` within `margin` of `z`."""
     clip_mask = (points[:, 2] >= z - margin) & (points[:, 2] < z + margin)
     if np.count_nonzero(clip_mask) > 0:
-        x_mean = np.mean(points[clip_mask, 0])
-        y_mean = np.mean(points[clip_mask, 1])
+        # Make smallest circle around points of slice and get its center
+        x_center, y_center, radius = smallestenclosingcircle.make_circle(points[clip_mask, 0:2])
+        # Get standard deviation of points in the xy plane
         xy_std = np.max(np.array([np.std(points[clip_mask, 0]),
                                   np.std(points[clip_mask, 1])]))
-        return x_mean, y_mean, z, xy_std
+        return x_center, y_center, z, xy_std
     else:
-        return np.nan, np.nan, z, np.nan
+        return np.nan, np.nan, z, np.nan    
 
 
 class PoleExtractor():
@@ -46,10 +49,12 @@ class PoleExtractor():
         To flag whether extracted pole is inside a building, a BGTPolyReader
         can be supplied which return buolding polygons for the given point
         cloud.
-    min_component_size : int (default: 100)
-        Minimum size of a component to be considered.
-    octree_grid_size : float (default: 0.2)
-        Octree level for the LabelConnectedComp algorithm.
+    min_samples : int (default: 100)
+        The number of samples (or total weight) in a neighborhood for a 
+        point to be considered as a core point (DBSCAN).
+    eps : float (default: 0.6)
+        The maximum distance between two samples for one to be considered 
+        as in the neighborhood of the other (DBSCAN).
     """
 
     DEBUG_INFO = {0: 'No errors',
@@ -60,13 +65,13 @@ class PoleExtractor():
 
     def __init__(self, target_label, ground_labels,
                  ahn_reader=None, building_reader=None,
-                 min_component_size=100, octree_grid_size=0.2):
+                 min_samples=100, eps=0.6):
         self.target_label = target_label
         self.ground_labels = ground_labels
         self.ahn_reader = ahn_reader
         self.building_reader = building_reader
-        self.min_component_size = min_component_size
-        self.octree_grid_size = octree_grid_size
+        self.min_samples = min_samples
+        self.eps = eps
 
     def _extract_pole(self, points, ground_est=None, step=0.1, percentile=25):
         """
@@ -90,6 +95,7 @@ class PoleExtractor():
         # of the point cloud.
         xyzstd = np.array([[*_get_xystd(points, z, step)]
                            for z in np.arange(z_min + step, z_max, 2*step)])
+
         if len(xyzstd) > 0:
             # Keep only those slices of which the std_dev is < 25th percentile.
             # This makes sure we only focus on the pole itself, not any
@@ -156,19 +162,20 @@ class PoleExtractor():
         mask_ids = np.where(labels == self.target_label)[0]
 
         if len(mask_ids) > 0:
-            noise_components = (LabelConnectedComp(
-                                    grid_size=self.octree_grid_size,
-                                    min_component_size=10)
-                                .get_components(points[mask_ids]))
+            # Remove noise (in 3D, label -1)
+            noise_components = (DBSCAN(
+                                    eps=self.eps,
+                                    min_samples=10)
+                                .fit_predict(points[mask_ids]))
             noise_filter = noise_components != -1
-            if np.count_nonzero(noise_filter) < self.min_component_size:
+            if np.count_nonzero(noise_filter) < self.min_samples:
                 return pole_locations
-            point_components = (LabelConnectedComp(
-                                    grid_size=self.octree_grid_size,
-                                    min_component_size=self.min_component_size)
-                                .get_components(points[mask_ids[noise_filter],
+            # Cluster points of target class (in 2D)
+            point_components = (DBSCAN(  
+                                    eps=self.eps,
+                                    min_samples=self.min_samples)
+                                .fit_predict(points[mask_ids[noise_filter],
                                                        0:2]))
-
             cc_labels = np.unique(point_components)
             cc_labels = set(cc_labels).difference((-1,))
 

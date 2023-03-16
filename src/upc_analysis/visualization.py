@@ -2,48 +2,93 @@ import numpy as np
 import logging
 import matplotlib.pyplot as plt
 
-from upcp.labels import Labels
-from upcp.region_growing import LabelConnectedComp
+#from upcp.labels import Labels   # TODO change back with the below
+from labels import Labels
 from upcp.utils import math_utils
 from upcp.utils import clip_utils
 
+from sklearn.cluster import DBSCAN
+
 logger = logging.getLogger(__name__)
 
-
-CLASS_COLORS = {'Unlabelled': 'lightgrey',
-                'Ground': 'peru',
+CLASS_COLORS = {'Unknown': 'lightgrey',
                 'Road': 'sandybrown',
+                'Sidewalk': 'peachpuff',
+                'Other ground': 'peru',
                 'Building': 'lightblue',
+                'Wall': 'lightblue',
+                'Fence': 'black', 
+                'Houseboat': 'lightblue',
+                'Bridge': 'linen',
+                'Bus/tram shelter': 'chocolate',
+                'Advertising column': 'chocolate',
+                'Kiosk': 'chocolate',
+                'Other structure': 'chocolate',
                 'Tree': 'green',
-                'Street light': 'orange',
-                'Traffic sign': 'crimson',
+                'Potted plant': 'palegreen',
+                'Other vegetation ': 'seagreen',
+                'Car': 'grey',
+                'Truck': 'grey',
+                'Bus': 'darkgrey',
+                'Tram': 'darkgrey',
+                'Bicycle': 'lightgrey',                
+                'Scooter/Motorcycle': 'lightgrey',                
+                'Other vehicle': 'grey',
+                'Person': 'sienna',
+                'Person sitting': 'sienna',
+                'Cyclist': 'sienna',
+                'Other Person': 'sienna',
+                'Streetlight': 'orange',
                 'Traffic light': 'red',
+                'Traffic sign': 'crimson',
+                'Signpost': 'crimson',
+                'Flagpole': 'coral',
+                'Bollard': 'red',
+                'Parasol': 'coral',
+                'Complex pole': 'salmon',
+                'Other pole': 'coral',
+                'Tram cable': 'darkgrey',
+                'Other cable': 'silver',
                 'City bench': 'darkviolet',
                 'Rubbish bin': 'pink',
-                'Car': 'grey',
+                'Small container': 'rosybrown', 
+                'Large container': 'rosybrown', 
+                'Letter box': 'navy',
+                'Parking meter': 'royalblue',
+                'EV charging station': 'cyan', 
+                'Fire hydrant': 'aqua',
+                'Bicycle rack': 'deepskyblue', 
+                'Advertising sign': 'steelblue', 
+                'Hanging streetlight': 'orangered',
+                'Terrace': 'plum',
+                'Playground': 'fuchsia',
+                'Electrical box': 'purple',
+                'Concrete block': 'thistle',
+                'Construction sign': 'tomato',
+                'Other object': 'teal',
                 'Noise': 'whitesmoke'}
 
 
 def get_mask_for_obj(points, labels, target_label, obj_loc, obj_top_z,
-                     obj_angle=0, min_component_size=100,
-                     octree_grid_size=0.4, noise_filter=True):
+                     obj_angle=0, min_samples=100,
+                     eps=0.6, noise_filter=True):
     target_idx = np.where(labels == target_label)[0]
 
-    # Filter noise.
+    # Filter noise (label -1)
     if noise_filter:
-        noise_components = (LabelConnectedComp(
-                                grid_size=0.2,
-                                min_component_size=10)
-                            .get_components(points[target_idx]))
+        noise_components = (DBSCAN(
+                                eps=eps,
+                                min_samples=10)
+                            .fit_predict(points[target_idx]))
         noise_mask = noise_components != -1
     else:
         noise_mask = np.ones_like(labels, dtypo=bool)
 
-    # Cluster points of target class.
-    point_components = (LabelConnectedComp(
-                            grid_size=octree_grid_size,
-                            min_component_size=min_component_size)
-                        .get_components(points[target_idx[noise_mask], 0:2]))
+    # Cluster points of target class
+    point_components = (DBSCAN(
+                            eps=eps,
+                            min_samples=min_samples)
+                        .fit_predict(points[target_idx[noise_mask], 0:2]))
 
     cc_labels = np.unique(point_components)
     cc_labels = set(cc_labels).difference((-1,))
@@ -79,7 +124,7 @@ def get_mask_for_obj(points, labels, target_label, obj_loc, obj_top_z,
     return bg_mask
 
 
-def plot_object(points, labels, colors=None, estimate=None):
+def plot_object(points, labels, colors=None, estimate=None, output_path=None):
     xs = points[:, 0]
     ys = points[:, 1]
     zs = points[:, 2]
@@ -130,6 +175,9 @@ def plot_object(points, labels, colors=None, estimate=None):
     fig.legend(by_label.values(), by_label.keys(),
                loc='upper center', bbox_to_anchor=(0.5, 1),
                ncol=int(len(by_label) / 2 + 0.5))
-
+    
+    if output_path is not None:
+        plt.savefig(output_path, transparent=False, facecolor='white')
+    
     fig.subplots_adjust(wspace=0, hspace=0)
     plt.show()
