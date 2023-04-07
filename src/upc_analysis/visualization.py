@@ -8,6 +8,7 @@ from upcp.utils import math_utils
 from upcp.utils import clip_utils
 
 from sklearn.cluster import DBSCAN
+from sklearn.cluster import OPTICS
 
 logger = logging.getLogger(__name__)
 
@@ -70,22 +71,25 @@ CLASS_COLORS = {'Unknown': 'lightgrey',
 
 
 def get_mask_for_obj(points, labels, target_label, obj_loc, obj_top_z,
-                     obj_angle=0, min_samples=100,
-                     eps=0.6, noise_filter=True):
+                     obj_angle=0, noise_filter=True, 
+                     eps_noise=0.6, min_samples_noise=10,
+                     eps=0.6, min_samples=100):
     target_idx = np.where(labels == target_label)[0]
 
     # Filter noise (label -1)
     if noise_filter:
-        noise_components = (DBSCAN(
-                                eps=eps,
-                                min_samples=10)
+#        noise_components = (DBSCAN(
+        noise_components = (OPTICS(
+                                eps=eps_noise,
+                                min_samples=min_samples_noise)
                             .fit_predict(points[target_idx]))
         noise_mask = noise_components != -1
     else:
         noise_mask = np.ones_like(labels, dtypo=bool)
 
     # Cluster points of target class
-    point_components = (DBSCAN(
+#    point_components = (DBSCAN(
+    point_components = (OPTICS(
                             eps=eps,
                             min_samples=min_samples)
                         .fit_predict(points[target_idx[noise_mask], 0:2]))

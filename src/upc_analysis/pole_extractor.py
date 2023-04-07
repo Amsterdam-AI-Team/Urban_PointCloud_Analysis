@@ -3,6 +3,7 @@ import logging
 from numba import jit
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN 
+from sklearn.cluster import OPTICS 
 from shapely.geometry import Point
 import smallestenclosingcircle 
 
@@ -47,7 +48,7 @@ class PoleExtractor():
         the labelled point cloud itself. Fall-back method.
     building_reader : upcp.utils.BGTPolyReader, optional
         To flag whether extracted pole is inside a building, a BGTPolyReader
-        can be supplied which return buolding polygons for the given point
+        can be supplied which return building polygons for the given point
         cloud.
     min_samples : int (default: 100)
         The number of samples (or total weight) in a neighborhood for a 
@@ -65,13 +66,17 @@ class PoleExtractor():
 
     def __init__(self, target_label, ground_labels,
                  ahn_reader=None, building_reader=None,
-                 min_samples=100, eps=0.6):
+                 eps_noise=0.6, min_samples_noise=10,
+                 eps=0.6, min_samples=100):
         self.target_label = target_label
         self.ground_labels = ground_labels
         self.ahn_reader = ahn_reader
         self.building_reader = building_reader
-        self.min_samples = min_samples
+        self.eps_noise = eps_noise
+        self.min_samples_noise = min_samples_noise
         self.eps = eps
+        self.min_samples = min_samples
+        
 
     def _extract_pole(self, points, ground_est=None, step=0.1, percentile=25):
         """
@@ -163,15 +168,19 @@ class PoleExtractor():
 
         if len(mask_ids) > 0:
             # Remove noise (in 3D, label -1)
-            noise_components = (DBSCAN(
-                                    eps=self.eps,
-                                    min_samples=10)
+            print(len(points[mask_ids]))
+#            noise_components = (DBSCAN(
+            noise_components = (OPTICS(    
+                                    eps=self.eps_noise,
+                                    min_samples=self.min_samples_noise)
                                 .fit_predict(points[mask_ids]))
             noise_filter = noise_components != -1
-            if np.count_nonzero(noise_filter) < self.min_samples:
+            if np.count_nonzero(noise_filter) < self.min_samples: 
                 return pole_locations
             # Cluster points of target class (in 2D)
-            point_components = (DBSCAN(  
+            print(len(points[mask_ids[noise_filter], 0:2]))
+#            point_components = (DBSCAN(  
+            point_components = (OPTICS(                  
                                     eps=self.eps,
                                     min_samples=self.min_samples)
                                 .fit_predict(points[mask_ids[noise_filter],
