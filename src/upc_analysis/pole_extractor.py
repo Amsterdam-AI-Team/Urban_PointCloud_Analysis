@@ -168,7 +168,6 @@ class PoleExtractor():
 
         if len(mask_ids) > 0:
             # Remove noise (in 3D, label -1)
-            print(len(points[mask_ids]))
 #            noise_components = (DBSCAN(
             noise_components = (OPTICS(    
                                     eps=self.eps_noise,
@@ -178,7 +177,6 @@ class PoleExtractor():
             if np.count_nonzero(noise_filter) < self.min_samples: 
                 return pole_locations
             # Cluster points of target class (in 2D)
-            print(len(points[mask_ids[noise_filter], 0:2]))
 #            point_components = (DBSCAN(  
             point_components = (OPTICS(                  
                                     eps=self.eps,
