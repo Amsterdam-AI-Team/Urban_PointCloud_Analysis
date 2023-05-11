@@ -1,9 +1,12 @@
 import numpy as np
 import logging
 from numba import jit
+
 from sklearn.decomposition import PCA
-from sklearn.cluster import DBSCAN 
-from sklearn.cluster import OPTICS 
+#from sklearn.cluster import DBSCAN 
+from sklearn.cluster import OPTICS
+from upcp.region_growing import LabelConnectedComp
+
 from shapely.geometry import Point
 import smallestenclosingcircle 
 
@@ -50,12 +53,14 @@ class PoleExtractor():
         To flag whether extracted pole is inside a building, a BGTPolyReader
         can be supplied which return building polygons for the given point
         cloud.
-    min_samples : int (default: 100)
+    min_samples : int (default: 100 / 10)
         The number of samples (or total weight) in a neighborhood for a 
-        point to be considered as a core point (DBSCAN).
+        point to be considered as a core point (OPTICS). Or: minimal component
+        size (ConnectedComponents).
     eps : float (default: 0.6)
         The maximum distance between two samples for one to be considered 
-        as in the neighborhood of the other (DBSCAN).
+        as in the neighborhood of the other (OPTICS). Or: octree grid size 
+        (ConnectedComponents)
     """
 
     DEBUG_INFO = {0: 'No errors',
@@ -168,21 +173,29 @@ class PoleExtractor():
 
         if len(mask_ids) > 0:
             # Remove noise (in 3D, label -1)
-#            noise_components = (DBSCAN(
-            noise_components = (OPTICS(    
-                                    eps=self.eps_noise,
-                                    min_samples=self.min_samples_noise)
-                                .fit_predict(points[mask_ids]))
+            #noise_components = (OPTICS(    
+            #                        eps=self.eps_noise,
+            #                        min_samples=self.min_samples_noise)
+            #                    .fit_predict(points[mask_ids]))
+            noise_components = (LabelConnectedComp(
+                                    grid_size=self.eps_noise,
+                                    min_component_size=self.min_samples_noise)
+                                .get_components(points[mask_ids]))
             noise_filter = noise_components != -1
             if np.count_nonzero(noise_filter) < self.min_samples: 
                 return pole_locations
             # Cluster points of target class (in 2D)
-#            point_components = (DBSCAN(  
-            point_components = (OPTICS(                  
-                                    eps=self.eps,
-                                    min_samples=self.min_samples)
-                                .fit_predict(points[mask_ids[noise_filter],
+            #point_components = (OPTICS(                  
+            #                        eps=self.eps,
+            #                        min_samples=self.min_samples)
+            #                    .fit_predict(points[mask_ids[noise_filter],
+            #                                           0:2]))
+            point_components = (LabelConnectedComp(
+                                    grid_size=self.eps,
+                                    min_component_size=self.min_samples)
+                                .get_components(points[mask_ids[noise_filter],
                                                        0:2]))
+
             cc_labels = np.unique(point_components)
             cc_labels = set(cc_labels).difference((-1,))
 

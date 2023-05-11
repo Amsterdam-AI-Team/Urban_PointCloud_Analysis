@@ -7,8 +7,9 @@ from labels import Labels
 from upcp.utils import math_utils
 from upcp.utils import clip_utils
 
-from sklearn.cluster import DBSCAN
+#from sklearn.cluster import DBSCAN
 from sklearn.cluster import OPTICS
+from upcp.region_growing import LabelConnectedComp
 
 logger = logging.getLogger(__name__)
 
@@ -78,21 +79,28 @@ def get_mask_for_obj(points, labels, target_label, obj_loc, obj_top_z,
 
     # Filter noise (label -1)
     if noise_filter:
-#        noise_components = (DBSCAN(
-        noise_components = (OPTICS(
-                                eps=eps_noise,
-                                min_samples=min_samples_noise)
-                            .fit_predict(points[target_idx]))
+        #noise_components = (OPTICS(
+        #                        eps=eps_noise,
+        #                        min_samples=min_samples_noise)
+        #                    .fit_predict(points[target_idx]))
+        noise_components = (LabelConnectedComp(
+                                grid_size=eps_noise,
+                                min_component_size=min_samples_noise)
+                            .get_components(points[target_idx]))
+
         noise_mask = noise_components != -1
     else:
         noise_mask = np.ones_like(labels, dtypo=bool)
 
     # Cluster points of target class
-#    point_components = (DBSCAN(
-    point_components = (OPTICS(
-                            eps=eps,
-                            min_samples=min_samples)
-                        .fit_predict(points[target_idx[noise_mask], 0:2]))
+#    point_components = (OPTICS(
+#                            eps=eps,
+#                            min_samples=min_samples)
+#                        .fit_predict(points[target_idx[noise_mask], 0:2]))
+    point_components = (LabelConnectedComp(
+                            grid_size=eps,
+                            min_component_size=min_samples)
+                        .get_components(points[target_idx[noise_mask], 0:2]))
 
     cc_labels = np.unique(point_components)
     cc_labels = set(cc_labels).difference((-1,))
