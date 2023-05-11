@@ -135,7 +135,7 @@ class PoleExtractor():
         angle = math_utils.vector_angle(direction_vector)
         return (x, y, z, x2, y2, z2, height, angle), debug
 
-    def get_pole_locations(self, points, labels, probabilities, tilecode=None):
+    def get_pole_locations(self, points, colors, labels, probabilities, tilecode=None):
         """
         Returns a list of locations and dimensions of pole-like objects
         corresponding to the target_label in a given point cloud.
@@ -201,6 +201,8 @@ class PoleExtractor():
             for cc in cc_labels:
                 ground_debug = 0
                 cc_mask = (point_components == cc)
+                z_min = np.min(points[mask_ids[noise_filter]][cc_mask][:, 2])
+                z_max = np.max(points[mask_ids[noise_filter]][cc_mask][:, 2])
                 n_points = np.count_nonzero(cc_mask)
                 logger.debug(f'Cluster {cc}: {n_points} points.')
                 cluster_center = np.mean(
@@ -222,7 +224,7 @@ class PoleExtractor():
                     ground_debug = 1
                     ahn_tile = self.ahn_reader.filter_tile(tilecode)
                     fast_z = FastGridInterpolator(ahn_tile['x'], ahn_tile['y'],
-                                                  ahn_tile['ground_surface'])
+                                                    ahn_tile['ground_surface'])
                     ground_est = fast_z(np.array([cluster_center]))[0]
                     if np.isnan(ground_est):
                         z_vals = fast_z(
@@ -233,18 +235,35 @@ class PoleExtractor():
                             ground_debug = 2
                         else:
                             ground_est = np.nanmean(z_vals)
-                pole, pole_debug = self._extract_pole(
-                                    points[mask_ids[noise_filter]][cc_mask],
-                                    ground_est)
-                dims = tuple(round(x, 2) for x in pole)
-                proba = np.mean(probabilities[mask_ids[noise_filter]][cc_mask])
-                debug = f'{ground_debug}_{pole_debug}'
-                in_building = 0
-                point = Point(dims[0], dims[1])
-                for poly in polys:
-                    if poly.contains(point):
-                        in_building = 1
-                        break
-                dims = (*dims, round(proba, 2), n_points, in_building, debug)
-                pole_locations.append(dims)
+                
+                # Ignore if cluster is smaller than 1 meter and directly attached to the ground to reduce false positives
+                if (np.abs(np.abs(ground_est) - np.abs(z_min)) > 0.25 or (z_max-z_min) > 1) or np.isnan(ground_est) or ground_est == None:
+                    pole, pole_debug = self._extract_pole(
+                                        points[mask_ids[noise_filter]][cc_mask],
+                                        ground_est)
+                    dims = tuple(round(x, 2) for x in pole)
+
+                    # Calculate mean color values and radius of cluster
+                    pnt_idxs_top_half = np.where(points[mask_ids[noise_filter]][cc_mask, 2:] > (dims[2] + (0.5*dims[6])))[0] # added
+                    if len(pnt_idxs_top_half) > 50: # added
+                        pole_colors = colors[mask_ids[noise_filter]][cc_mask][pnt_idxs_top_half] # added
+                        m_red, m_green, m_blue = np.mean(pole_colors[:,0]), \
+                                            np.mean(pole_colors[:,1]), np.mean(pole_colors[:,2]) # added
+                        _, _, radius = smallestenclosingcircle.make_circle(points[mask_ids[noise_filter]][cc_mask, 0:2][pnt_idxs_top_half]) # added
+                    else:
+                        pole_colors = colors[mask_ids[noise_filter]][cc_mask] # added
+                        m_red, m_green, m_blue = np.mean(pole_colors[:,0]), \
+                                        np.mean(pole_colors[:,1]), np.mean(pole_colors[:,2]) # added
+                        _, _, radius = smallestenclosingcircle.make_circle(points[mask_ids[noise_filter]][cc_mask, 0:2]) # added
+                    proba = np.mean(probabilities[mask_ids[noise_filter]][cc_mask])
+                    debug = f'{ground_debug}_{pole_debug}'
+                    in_building = 0
+                    point = Point(dims[0], dims[1])
+                    for poly in polys:
+                        if poly.contains(point):
+                            in_building = 1
+                            break
+                    dims = (*dims, round(m_red, 2), round(m_green, 2), round(m_blue, 2), round(radius, 3), round(proba, 2), 
+                            n_points, in_building, debug) # adjusted
+                    pole_locations.append(dims)
         return pole_locations
