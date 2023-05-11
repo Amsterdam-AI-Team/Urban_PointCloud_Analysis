@@ -2,16 +2,13 @@ import numpy as np
 import logging
 import matplotlib.pyplot as plt
 
-#from upcp.labels import Labels   # TODO change back with the below
+# from upcp.labels import Labels
 from labels import Labels
 from upcp.utils import math_utils
 from upcp.utils import clip_utils
 
-#from sklearn.cluster import DBSCAN
-from sklearn.cluster import OPTICS
-from upcp.region_growing import LabelConnectedComp
-
 logger = logging.getLogger(__name__)
+
 
 CLASS_COLORS = {'Unknown': 'lightgrey',
                 'Road': 'sandybrown',
@@ -71,72 +68,15 @@ CLASS_COLORS = {'Unknown': 'lightgrey',
                 'Noise': 'whitesmoke'}
 
 
-def get_mask_for_obj(points, labels, target_label, obj_loc, obj_top_z,
-                     obj_angle=0, noise_filter=True, 
-                     eps_noise=0.6, min_samples_noise=10,
-                     eps=0.6, min_samples=100):
-    target_idx = np.where(labels == target_label)[0]
-
-    # Filter noise (label -1)
-    if noise_filter:
-        #noise_components = (OPTICS(
-        #                        eps=eps_noise,
-        #                        min_samples=min_samples_noise)
-        #                    .fit_predict(points[target_idx]))
-        noise_components = (LabelConnectedComp(
-                                grid_size=eps_noise,
-                                min_component_size=min_samples_noise)
-                            .get_components(points[target_idx]))
-
-        noise_mask = noise_components != -1
-    else:
-        noise_mask = np.ones_like(labels, dtypo=bool)
-
-    # Cluster points of target class
-#    point_components = (OPTICS(
-#                            eps=eps,
-#                            min_samples=min_samples)
-#                        .fit_predict(points[target_idx[noise_mask], 0:2]))
-    point_components = (LabelConnectedComp(
-                            grid_size=eps,
-                            min_component_size=min_samples)
-                        .get_components(points[target_idx[noise_mask], 0:2]))
-
-    cc_labels = np.unique(point_components)
-    cc_labels = set(cc_labels).difference((-1,))
-
-    off_eps = 0.05
-    obj_idx = -1
-    for cc in cc_labels:
-        cc_mask = point_components == cc
-        min_x, min_y, max_x, max_y = math_utils.compute_bounding_box(
-                                points[target_idx[noise_mask]][cc_mask])
-        off_h = (np.min(points[target_idx[noise_mask]][cc_mask, 2])
-                 - obj_loc[2])
-        offset = (np.sqrt((off_h / np.sin(np.deg2rad(90 - obj_angle)))**2
-                          - off_h**2)
-                  + off_eps)
-        min_x -= offset
-        min_y -= offset
-        max_x += offset
-        max_y += offset
-        if min_x <= obj_loc[0] <= max_x and min_y <= obj_loc[1] <= max_y:
-            obj_idx = int(cc)
-            break
-    if obj_idx == -1:
-        logger.debug("No matching object found.")
-        pad = 1
-        box = (obj_loc[0]-pad, obj_loc[1]-pad, obj_loc[0]+pad, obj_loc[1]+pad)
-    else:
-        pad = 0.5
-        box = (min_x-pad, min_y-pad, max_x+pad, max_y+pad)
+def get_mask_for_obj(points, obj_loc, obj_top_z):
+    pad = 2.5
+    box = (obj_loc[0]-pad, obj_loc[1]-pad, obj_loc[0]+pad, obj_loc[1]+pad)
 
     bg_mask = clip_utils.box_clip(
-                        points, box, bottom=obj_loc[2]-pad, top=obj_top_z+2)
+                        points, box, bottom=obj_loc[2]-0.5, top=obj_top_z+5)
     return bg_mask
 
-
-def plot_object(points, labels, colors=None, estimate=None, output_path=None):
+def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate=None):
     xs = points[:, 0]
     ys = points[:, 1]
     zs = points[:, 2]
@@ -146,34 +86,41 @@ def plot_object(points, labels, colors=None, estimate=None, output_path=None):
     ax2 = fig.add_subplot(132)
     ax3 = fig.add_subplot(133, projection='3d')
 
-    label_set = np.unique(labels)
+    label_set = list(np.unique(labels))
+    if 60 in labels:
+        label_set.remove(60)
+        label_set.append(60)
 
     for label in label_set:
         if label == Labels.NOISE:
             continue
+        if label == 60:
+            size = 5
+        else:
+            size = 1
         label_mask = labels == label
         label_str = Labels.get_str(label)
 
-        ax1.scatter(xs[label_mask], zs[label_mask],
+        ax1.scatter(xs[label_mask], zs[label_mask]-np.min(zs),
                     c=CLASS_COLORS[label_str], marker='.', edgecolors='none',
-                    label=label_str)
-        ax2.scatter(ys[label_mask], zs[label_mask],
-                    c=CLASS_COLORS[label_str], marker='.', edgecolors='none')
+                    label=label_str, s=size)
+        ax2.scatter(ys[label_mask], zs[label_mask]-np.min(zs),
+                    c=CLASS_COLORS[label_str], marker='.', edgecolors='none', s=size)
 
         if colors is not None:
             c3 = colors[label_mask]
         else:
             c3 = CLASS_COLORS[label_str]
         ax3.scatter(xs[label_mask], ys[label_mask], zs[label_mask],
-                    c=c3, marker='.', edgecolors='none', alpha=0.05)
+                    c=c3, marker='.', edgecolors='none', alpha=0.1)
 
         if estimate is not None:
-            ax1.plot(estimate[:, 0], estimate[:, 2],
-                     c='red', linewidth=3, alpha=0.7, label='Estimate')
-            ax2.plot(estimate[:, 1], estimate[:, 2],
-                     c='red', linewidth=3, alpha=0.7)
-            ax3.plot(estimate[:, 0], estimate[:, 1], estimate[:, 2],
-                     c='red', linewidth=3, alpha=1)
+            ax1.plot(estimate[:, 0], estimate[:, 2]-[np.min(zs), np.min(zs)],
+                     c='red', linewidth=1, alpha=0.7, label='Estimate')
+            ax2.plot(estimate[:, 1], estimate[:, 2]-[np.min(zs), np.min(zs)],
+                     c='red', linewidth=1, alpha=0.7)
+            # ax3.plot(estimate[:, 0], estimate[:, 1], estimate[:, 2],
+            #          c='red', linewidth=3, alpha=1)
 
     ax1.set_aspect('equal')
     ax2.set_aspect('equal')
@@ -186,10 +133,47 @@ def plot_object(points, labels, colors=None, estimate=None, output_path=None):
     by_label = dict(zip(labels, handles))
     fig.legend(by_label.values(), by_label.keys(),
                loc='upper center', bbox_to_anchor=(0.5, 1),
-               ncol=int(len(by_label) / 2 + 0.5))
-    
-    if output_path is not None:
-        plt.savefig(output_path, transparent=False, facecolor='white')
-    
+               ncol=int(len(by_label) / 2 + 0.5), markerscale=8)
+
     fig.subplots_adjust(wspace=0, hspace=0)
+    plt.savefig('{}/{}.png'.format(write_path, idx))
     plt.show()
+    plt.close()
+
+def generate_png_single_axis(idx, points, labels, write_path, plot_axis='x'):
+    if plot_axis == 'x':
+        axis_hor = points[:, 0]
+    elif plot_axis == 'y':
+        axis_hor = points[:, 1]
+    axis_ver = points[:, 2]
+
+    label_set = list(np.unique(labels))
+    if 60 in labels:
+        label_set.remove(60)
+        label_set.append(60)
+    
+    for label in label_set:
+        if label == Labels.NOISE:
+            continue
+
+        label_mask = labels == label
+        label_str = Labels.get_str(label)
+
+        if label == 60:
+            size = 5
+        else:
+            size = 1
+
+        plt.scatter(axis_hor[label_mask], axis_ver[label_mask],
+                        c=CLASS_COLORS[label_str], marker='.', edgecolors='none',
+                        label=label_str, s=size)
+
+    ax = plt.gca()
+    ax.set_aspect('equal')
+    pad = 1
+    plt.xlim(min(axis_hor)-pad, max(axis_hor)+pad)
+    plt.ylim(min(axis_ver)-pad, max(axis_ver)+pad)
+    plt.axis('off')
+    plt.savefig('{}/{}/{}_{}_{}_{}_{}.png'.format(write_path, plot_axis, idx, min(axis_hor)-pad, min(axis_ver)-pad, 
+                                        max(axis_hor)+pad, max(axis_ver)+pad), bbox_inches='tight',pad_inches = 0)
+    plt.close()
