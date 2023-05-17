@@ -137,7 +137,7 @@ def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate
 
     fig.subplots_adjust(wspace=0, hspace=0)
     plt.savefig('{}/{}.png'.format(write_path, idx))
-    plt.show()
+    #plt.show()
     plt.close()
 
 def generate_png_single_axis(idx, points, labels, write_path, plot_axis='x'):
