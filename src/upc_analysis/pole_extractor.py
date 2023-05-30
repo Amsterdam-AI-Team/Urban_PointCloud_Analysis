@@ -163,6 +163,7 @@ class PoleExtractor():
         height, angle, proba, n_points, in_building, debug), where (x, y, z) is
         the location of the bottom of the pole, and (x2, y2, z2) is the top.
         """
+
         if (((self.ahn_reader is not None) or (self.bgt_reader is not None))
                 and tilecode is None):
             logger.error('A tilecode must be provided when either ahn_reader '
@@ -248,9 +249,10 @@ class PoleExtractor():
                             ground_debug = 2
                         else:
                             ground_est = np.nanmean(z_vals)
-                
+
+
                 # Ignore if cluster is smaller than 1 meter and directly attached to the ground to reduce false positives
-                if (np.abs(np.abs(ground_est) - np.abs(z_min)) > 0.25 or (z_max-z_min) > 1) or np.isnan(ground_est) or ground_est == None:
+                if (np.abs(np.abs(ground_est) - np.abs(z_min)) > 0.25 or (z_max-z_min) > 1) or np.isnan(ground_est) or ground_est == None: # TODO: put this filter outside function, like others
                     pole, pole_debug = self._extract_pole(
                                         points[mask_ids[noise_filter]][cc_mask],
                                         ground_est)
@@ -279,4 +281,5 @@ class PoleExtractor():
                     dims = (*dims, round(m_red, 2), round(m_green, 2), round(m_blue, 2), round(radius, 3), round(proba, 2), 
                             n_points, in_building, debug) # adjusted
                     pole_locations.append(dims)
+
         return pole_locations
