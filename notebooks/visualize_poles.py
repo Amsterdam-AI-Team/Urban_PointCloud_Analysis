@@ -7,14 +7,14 @@ from upc_analysis import visualization
 import multiprocessing
 
 # Paths - point cloud data
-base_folder = '../../../code/blobfuse/pointcloud/UI'
+base_folder = '/home/azureuser/cloudfiles/code/blobfuse/pointcloud/UI'
 dataset_folder = f'{base_folder}/Point_Cloud_Data/Amsterdam/Amsterdam_Oost/Unprocessed/All/nl-amsv-201001-7415-laz/las_processor_bundled_out/'
 pred_folder = f'{base_folder}/Preds/Amsterdam/Amsterdam_Oost/inference_oost_npz/'
 prefix = 'filtered_'
 prefix_pred = 'pred_'
 
 # Paths - extracted poles
-base_folder_output = '../../../code/blobfuse/ovl'
+base_folder_output = '/home/azureuser/cloudfiles/code/blobfuse/ovl'
 output_file_filter = base_folder_output + "/20230523-200444_poles_extracted_50_1_150_1_filtered.csv"
 img_out_folder = f'{base_folder_output}/images/20230614-132510/'
 
