@@ -4,6 +4,7 @@ import numpy as np
 import shapely.geometry as sg
 import laspy
 from upc_analysis import visualization
+import multiprocessing
 
 # Paths - point cloud data
 base_folder = '../../../code/blobfuse/pointcloud/UI'
@@ -43,11 +44,15 @@ for idx, obj in poles_df.iterrows():
     if sum(obj_mask) > 0:
         # Save the object for all axes
         write_path = img_out_folder + 'object_all_axes' 
-        visualization.generate_png_all_axes(idx, points[obj_mask], labels[obj_mask], 
-                            write_path, colors=colors[obj_mask], estimate=np.vstack((obj_location, obj_top)))
+        p = multiprocessing.Process(target=visualization.generate_png_all_axes, 
+        args=(idx, points[obj_mask], labels[obj_mask], write_path, 
+        colors[obj_mask], np.vstack((obj_location, obj_top)), False))
+        p.start()                  
         # Save the objects per axis
         write_path = img_out_folder + 'object_per_axis'
-        visualization.generate_png_single_axis(idx, points[obj_mask], 
-                                               labels[obj_mask], write_path, plot_axis='x')
-        visualization.generate_png_single_axis(idx, points[obj_mask], 
-                                               labels[obj_mask], write_path, plot_axis='y')
+        p = multiprocessing.Process(target=visualization.generate_png_single_axis, 
+        args=(idx, points[obj_mask], labels[obj_mask], write_path, 'x'))
+        p.start() 
+        p = multiprocessing.Process(target=visualization.generate_png_single_axis, 
+        args=(idx, points[obj_mask], labels[obj_mask], write_path, 'y'))
+        p.start()
