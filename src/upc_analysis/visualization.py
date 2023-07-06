@@ -136,7 +136,6 @@ def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate
                ncol=int(len(by_label) / 2 + 0.5), markerscale=8)
 
     fig.subplots_adjust(wspace=0, hspace=0)
-
     fig.savefig('{}/{}.png'.format(write_path, idx))
     if show_image:
         plt.show()
@@ -144,6 +143,7 @@ def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate
 
 
 def generate_png_single_axis(idx, points, labels, write_path, plot_axis='x'):
+    #fig = plt.figure()
     if plot_axis == 'x':
         axis_hor = points[:, 0]
     elif plot_axis == 'y':
