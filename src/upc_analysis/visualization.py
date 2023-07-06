@@ -136,13 +136,10 @@ def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate
                ncol=int(len(by_label) / 2 + 0.5), markerscale=8)
 
     fig.subplots_adjust(wspace=0, hspace=0)
-
-    #plt.savefig('{}/{}.png'.format(write_path, idx))
-    fig.savefig('{}/{}.png'.format(write_path, idx), dpi=50)
+    fig.savefig('{}/{}.png'.format(write_path, idx))
     if show_image:
         plt.show()
     plt.close()
-
 
 
 def generate_png_single_axis(idx, points, labels, write_path, plot_axis='x'):
@@ -185,6 +182,4 @@ def generate_png_single_axis(idx, points, labels, write_path, plot_axis='x'):
     file_name = '{}/{}/{}_{}_{}_{}_{}.png'.format(write_path, plot_axis, idx, min(axis_hor)-pad, min(axis_ver)-pad, 
                                         max(axis_hor)+pad, max(axis_ver)+pad)      
     plt.savefig(file_name, bbox_inches='tight', pad_inches=0)
-    #fig.savefig(file_name, bbox_inches='tight',pad_inches=0, dpi=50)
-
     plt.close()
