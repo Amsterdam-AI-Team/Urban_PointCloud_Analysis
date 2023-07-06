@@ -53,6 +53,14 @@ This is very much work in progress: for now, we only provide code to extract the
 
 We provide tutorial [notebooks](notebooks) that demonstrate how the tools can be used. Labeled example point clouds are provided to get started.
 
+0. Get labeled point clouds (for example with [UPCP](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Processing) or [RandLA-Net](https://github.com/Amsterdam-AI-Team/RandLA-Net)).
+1. Run Extract_poles.ipynb to extract all individual poles with some properties. It returns a csv file with one row per pole.
+2. Run Visualize_poles.ipynb (or visualize_poles.py) to create images for each pole. It returns 3 images per pole.
+3. Run the [pole tagger tool](https://github.com/Amsterdam-AI-Team/pole_tagger) to check all individual poles visually.
+4. (optional) Run the [validation tool](https://github.com/Amsterdam-AI-Team/pole_tagger) to check and fix pole tagger results.
+
+NB. The notebooks Dataset_statics and Get_valid_locations are for additional analysis. 
+
 ---
 
 This repository was created by [Amsterdam Intelligence](https://amsterdamintelligence.com/) for the City of Amsterdam.
