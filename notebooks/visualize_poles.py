@@ -15,8 +15,8 @@ prefix_pred = 'pred_'
 
 # Paths - extracted poles
 base_folder_output = '/home/azureuser/cloudfiles/code/blobfuse/ovl'
-output_file_filter = base_folder_output + "/20230523-200444_poles_extracted_50_1_150_1_filtered.csv"
-img_out_folder = f'{base_folder_output}/images/20230614-132510/'
+output_file_filter = base_folder_output + "/20230707-070119_poles_extracted_50_1_150_1.csv"  # _filtered
+img_out_folder = f'{base_folder_output}/images/20230707-070119/'
 
 # Load poles data
 poles_df = pd.read_csv(output_file_filter)
@@ -47,12 +47,12 @@ for idx, obj in poles_df.iterrows():
         p = multiprocessing.Process(target=visualization.generate_png_all_axes, 
         args=(idx, points[obj_mask], labels[obj_mask], write_path, 
         colors[obj_mask], np.vstack((obj_location, obj_top)), False))
-        p.start()                  
+        p.start()
         # Save the objects per axis
         write_path = img_out_folder + 'object_per_axis'
         p = multiprocessing.Process(target=visualization.generate_png_single_axis, 
-        args=(idx, points[obj_mask], labels[obj_mask], write_path, 'x'))
-        p.start() 
+        args=(idx, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'x'))
+        p.start()
         p = multiprocessing.Process(target=visualization.generate_png_single_axis, 
-        args=(idx, points[obj_mask], labels[obj_mask], write_path, 'y'))
+        args=(idx, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'y'))
         p.start()
