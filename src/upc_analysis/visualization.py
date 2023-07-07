@@ -76,6 +76,7 @@ def get_mask_for_obj(points, obj_loc, obj_top_z):
                         points, box, bottom=obj_loc[2]-0.5, top=obj_top_z+5)
     return bg_mask
 
+
 def generate_png_all_axes(identifier, points, labels, write_path, colors=None, estimate=None, show_image=False):
     xs = points[:, 0]
     ys = points[:, 1]
@@ -101,18 +102,18 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
         label_mask = labels == label
         label_str = Labels.get_str(label)
 
+        if colors is not None:
+            my_colors = colors[label_mask]
+        else:
+            my_colors = CLASS_COLORS[label_str]
+
         ax1.scatter(xs[label_mask], zs[label_mask]-np.min(zs),
-                    c=CLASS_COLORS[label_str], marker='.', edgecolors='none',
+                    c=my_colors, marker='.', edgecolors='none',
                     label=label_str, s=size)
         ax2.scatter(ys[label_mask], zs[label_mask]-np.min(zs),
-                    c=CLASS_COLORS[label_str], marker='.', edgecolors='none', s=size)
-
-        if colors is not None:
-            c3 = colors[label_mask]
-        else:
-            c3 = CLASS_COLORS[label_str]
+                    c=my_colors, marker='.', edgecolors='none', s=size)
         ax3.scatter(xs[label_mask], ys[label_mask], zs[label_mask],
-                    c=c3, marker='.', edgecolors='none', alpha=0.1)
+                    c=my_colors, marker='.', edgecolors='none', alpha=0.1)
 
         if estimate is not None:
             ax1.plot(estimate[:, 0], estimate[:, 2]-[np.min(zs), np.min(zs)],
@@ -129,11 +130,12 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
     ax3.yaxis.set_ticklabels([])
     ax3.dist = 8
 
-    handles, labels = ax1.get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    fig.legend(by_label.values(), by_label.keys(),
-               loc='upper center', bbox_to_anchor=(0.5, 1),
-               ncol=int(len(by_label) / 2 + 0.5), markerscale=8)
+    if colors is None:
+        handles, labels = ax1.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        fig.legend(by_label.values(), by_label.keys(),
+                loc='upper center', bbox_to_anchor=(0.5, 1),
+                ncol=int(len(by_label) / 2 + 0.5), markerscale=8)
 
     fig.subplots_adjust(wspace=0, hspace=0)
     fig.savefig('{}/{}.png'.format(write_path, identifier))
@@ -142,8 +144,7 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
     plt.close()
 
 
-def generate_png_single_axis(identifier, points, labels, write_path, plot_axis='x'):
-    #fig = plt.figure()
+def generate_png_single_axis(identifier, points, labels, write_path, colors=None, plot_axis='x'):
     if plot_axis == 'x':
         axis_hor = points[:, 0]
     elif plot_axis == 'y':
@@ -167,8 +168,13 @@ def generate_png_single_axis(identifier, points, labels, write_path, plot_axis='
         else:
             size = 1
 
+        if colors is not None:
+            my_colors = colors[label_mask]
+        else:
+            my_colors = CLASS_COLORS[label_str]
+        
         plt.scatter(axis_hor[label_mask], axis_ver[label_mask],
-                        c=CLASS_COLORS[label_str], marker='.', edgecolors='none',
+                        c=my_colors, marker='.', edgecolors='none',
                         label=label_str, s=size)
 
     ax = plt.gca()
