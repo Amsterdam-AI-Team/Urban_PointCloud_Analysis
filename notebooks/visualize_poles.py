@@ -24,9 +24,9 @@ poles_df.sort_values('tilecode', inplace=True)
 
 # Save png of object x, y and 3d axis
 open_tile = []
-for idx, obj in poles_df.iterrows():
+for _, obj in poles_df.iterrows():
     # Get object location and top (per pole)
-    print(idx)
+    identifier = obj.identifier
     obj_location = (obj.rd_x, obj.rd_y, obj.z)
     obj_top = (obj.tx, obj.ty, obj.tz)
 
@@ -45,14 +45,14 @@ for idx, obj in poles_df.iterrows():
         # Save the object for all axes
         write_path = img_out_folder + 'object_all_axes' 
         p = multiprocessing.Process(target=visualization.generate_png_all_axes, 
-        args=(idx, points[obj_mask], labels[obj_mask], write_path, 
+        args=(identifier, points[obj_mask], labels[obj_mask], write_path, 
         colors[obj_mask], np.vstack((obj_location, obj_top)), False))
         p.start()
         # Save the objects per axis
         write_path = img_out_folder + 'object_per_axis'
         p = multiprocessing.Process(target=visualization.generate_png_single_axis, 
-        args=(idx, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'x'))
+        args=(identifier, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'x'))
         p.start()
         p = multiprocessing.Process(target=visualization.generate_png_single_axis, 
-        args=(idx, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'y'))
+        args=(identifier, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'y'))
         p.start()

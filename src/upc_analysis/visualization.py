@@ -77,7 +77,7 @@ def get_mask_for_obj(points, obj_loc, obj_top_z):
     return bg_mask
 
 
-def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate=None, show_image=False):
+def generate_png_all_axes(identifier, points, labels, write_path, colors=None, estimate=None, show_image=False):
     xs = points[:, 0]
     ys = points[:, 1]
     zs = points[:, 2]
@@ -138,13 +138,13 @@ def generate_png_all_axes(idx, points, labels, write_path, colors=None, estimate
                 ncol=int(len(by_label) / 2 + 0.5), markerscale=8)
 
     fig.subplots_adjust(wspace=0, hspace=0)
-    fig.savefig('{}/{}.png'.format(write_path, idx))
+    fig.savefig('{}/{}.png'.format(write_path, identifier))
     if show_image:
         plt.show()
     plt.close()
 
 
-def generate_png_single_axis(idx, points, labels, write_path, colors=None, plot_axis='x'):
+def generate_png_single_axis(identifier, points, labels, write_path, colors=None, plot_axis='x'):
     if plot_axis == 'x':
         axis_hor = points[:, 0]
     elif plot_axis == 'y':
@@ -185,7 +185,8 @@ def generate_png_single_axis(idx, points, labels, write_path, colors=None, plot_
     plt.ylim(min(axis_ver)-pad, max(axis_ver)+pad)
     plt.axis('off')
 
-    file_name = '{}/{}/{}_{}_{}_{}_{}.png'.format(write_path, plot_axis, idx, min(axis_hor)-pad, min(axis_ver)-pad, 
+    file_name = '{}/{}/{}_{}_{}_{}_{}.png'.format(write_path, plot_axis, identifier, 
+                                                  min(axis_hor)-pad, min(axis_ver)-pad, 
                                         max(axis_hor)+pad, max(axis_ver)+pad)      
     plt.savefig(file_name, bbox_inches='tight', pad_inches=0)
     plt.close()
