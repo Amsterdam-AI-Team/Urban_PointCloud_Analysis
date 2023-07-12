@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from labels import Labels
 from upcp.utils import math_utils
 from upcp.utils import clip_utils
+import laspy
+import multiprocessing
 
 logger = logging.getLogger(__name__)
 
@@ -190,3 +192,43 @@ def generate_png_single_axis(identifier, points, labels, write_path, colors=None
                                         max(axis_hor)+pad, max(axis_ver)+pad)      
     plt.savefig(file_name, bbox_inches='tight', pad_inches=0)
     plt.close()
+
+
+def create_images_for_poles(poles_df, dataset_folder, pred_folder, img_out_folder, prefix, prefix_pred):
+    # Save png of object x, y and 3d axis
+    open_tile = []
+    for idx, obj in poles_df.iterrows():
+        if idx % 1000 == 0:
+            print(idx)
+            
+        # Get object location and top (per pole)
+        identifier = obj.identifier
+        obj_location = (obj.rd_x, obj.rd_y, obj.z)
+        obj_top = (obj.tx, obj.ty, obj.tz)
+
+        if obj.tilecode != open_tile:
+            # Get the point cloud data (per tile)
+            cloud = laspy.read(f'{dataset_folder}{prefix}{obj.tilecode}.laz')
+            points = np.vstack((cloud.x, cloud.y, cloud.z)).T
+            npz_file = np.load(pred_folder + prefix_pred + obj.tilecode + '.npz')
+            labels = npz_file['label']
+            colors = np.vstack((cloud.red, cloud.green, cloud.blue)).T / (2**16 - 1)
+            open_tile = obj.tilecode  # tile_code that is currently open
+
+        # Get a mask for the point cloud around the object's location (per pole)
+        obj_mask = get_mask_for_obj(points, obj_location, obj_top[2])
+        if sum(obj_mask) > 0:
+            # Save the object for all axes
+            write_path = img_out_folder + 'object_all_axes' 
+            p = multiprocessing.Process(target=generate_png_all_axes, 
+            args=(identifier, points[obj_mask], labels[obj_mask], write_path, 
+            colors[obj_mask], np.vstack((obj_location, obj_top)), False))
+            p.start()                  
+            # Save the objects per axis
+            write_path = img_out_folder + 'object_per_axis'
+            p = multiprocessing.Process(target=generate_png_single_axis, 
+            args=(identifier, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'x'))
+            p.start() 
+            p = multiprocessing.Process(target=generate_png_single_axis, 
+            args=(identifier, points[obj_mask], labels[obj_mask], write_path, colors[obj_mask], 'y'))
+            p.start() 
