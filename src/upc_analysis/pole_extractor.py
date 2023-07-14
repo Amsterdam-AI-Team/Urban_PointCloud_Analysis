@@ -8,7 +8,8 @@ from sklearn.cluster import OPTICS
 from upcp.region_growing import LabelConnectedComp
 
 from shapely.geometry import Point
-import smallestenclosingcircle 
+import smallestenclosingcircle
+import geopandas as gpd
 
 #from upcp.labels import Labels  # TODO change back with the below
 from labels import Labels
@@ -283,3 +284,21 @@ class PoleExtractor():
                     pole_locations.append(dims)
 
         return pole_locations
+        
+
+def remove_tree_poles(filename_trees, tree_area, poles_df):
+    # Get trees data
+    df_trees = gpd.read_file(filename_trees)
+    df_trees_o = df_trees[df_trees['Stadsdeel of kern'] == tree_area]
+
+    # Add buffer around trees
+    df_trees_o['buffer'] = df_trees_o['geometry'].buffer(0.3)
+    df_trees_o = df_trees_o.set_geometry('buffer')
+
+    # Check whether pole is in buffered trees
+    poles_df = gpd.GeoDataFrame(poles_df, geometry=gpd.points_from_xy(poles_df.rd_x, poles_df.rd_y), crs='EPSG:28992')
+    gdf_sjoin = poles_df.sjoin(df_trees_o, predicate='within')
+
+    # Remove poles that are within buffered trees
+    poles_df = poles_df[~poles_df.index.isin(gdf_sjoin.index)]
+    return poles_df
