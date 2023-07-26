@@ -61,6 +61,14 @@ We provide tutorial [notebooks](notebooks) that demonstrate how the tools can be
 
 NB. The notebooks Dataset_statics and Get_valid_locations are for additional analysis. 
 
----
+## Contributing
+
+Feel free to help out! [Open an issue](https://github.com/Amsterdam-AI-Team/{{ cookiecutter.repo_name }}/issues), submit a [PR](https://github.com/Amsterdam-AI-Team/{{ cookiecutter.repo_name }}/pulls) or [contact us](https://amsterdamintelligence.com/contact/).
+
+## Acknowledgements
 
 This repository was created by [Amsterdam Intelligence](https://amsterdamintelligence.com/) for the City of Amsterdam.
+
+## License 
+
+This project is licensed under the terms of the European Union Public License 1.2 (EUPL-1.2).
