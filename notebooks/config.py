@@ -7,8 +7,9 @@ prefix = 'filtered_'
 prefix_pred = 'pred_'
 
 ahn_data_folder = f'{base_folder}/ahn/'
-bgt_building_file = f'{base_folder}/bgt/bgt_buildings.csv'
-trees_file = f'{base_folder}/trees/obj_vgo_boom_view.gpkg'
+bgt_building_file = f'{base_folder}/bgt/bgt_buildings_demo.csv'
+trees_file = f'{base_folder}/bgt/bgt_trees_demo.gpkg'
+tree_area = None
 
 # Output paths
 output_file = f'{base_folder}/poles_extracted.csv'
@@ -32,3 +33,6 @@ MIN_SAMPLES = 150
 # Filter settings for minimum and maximum height (m)
 MIN_HEIGHT = 1.8
 MAX_HEIGHT = 16
+
+# Filter setting for maximum tree distance (m)
+MAX_TREE_DIST = 0.6

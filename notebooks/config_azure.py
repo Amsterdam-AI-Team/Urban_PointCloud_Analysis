@@ -43,3 +43,6 @@ MIN_SAMPLES = 150
 # Filter settings for minimum and maximum height (m)
 MIN_HEIGHT = 1.8
 MAX_HEIGHT = 16
+
+# Filter setting for maximum tree distance (m)
+MAX_TREE_DIST = 0.3
