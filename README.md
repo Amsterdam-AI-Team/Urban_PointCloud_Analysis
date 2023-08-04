@@ -17,7 +17,9 @@ This is very much work in progress: for now, we only provide code to extract the
 
  * [`datasets`](./datasets) _Demo dataset to get started_
    * [`ahn`](./datasets/ahn) _AHN elevation data_
-   * [`pointcloud`](./datasets/pointcloud) _Example labeled urban point clouds_
+   * [`bgt`](./datasets/bgt) _Example building and tree datasets (from the BGT)_
+   * [`pointcloud`](./datasets/pointcloud) _Example urban point clouds_
+   * [`predictions`](./datasets/predictions) _Example labels for urban point clouds_
  * [`media/examples`](./media/examples) _Visuals_
  * [`notebooks`](./notebooks) _Jupyter notebook tutorials_
  * [`src/upc_analysis`](./src/upc_analysis) _Python source code_
@@ -47,6 +49,8 @@ This is very much work in progress: for now, we only provide code to extract the
 
 5. Check out the [notebooks](notebooks) for a demonstration.
 
+The code has been tested with Python 3.8 on Linux, MacOS and Windows.
+
 ---
 
 ## Usage
@@ -56,11 +60,24 @@ We provide tutorial [notebooks](notebooks) that demonstrate how the tools can be
 0. Get labeled point clouds (for example with [UPCP](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Processing) or [RandLA-Net](https://github.com/Amsterdam-AI-Team/RandLA-Net)).
 1. Run Extract_poles.ipynb to extract all individual poles with some properties. It returns a csv file with one row per pole.
 2. Run Visualize_poles.ipynb (or visualize_poles.py) to create images for each pole. It returns 3 images per pole.
-3. Run the [pole tagger tool](https://github.com/Amsterdam-AI-Team/pole_tagger) to check all individual poles visually.
-4. (optional) Run the [validation tool](https://github.com/Amsterdam-AI-Team/pole_tagger) to check and fix pole tagger results.
+3. Run the [pole tagger tool](https://github.com/Amsterdam-AI-Team/pole_tagger) to check and correct all individual poles visually.
 
-NB. The notebooks Dataset_statics and Get_valid_locations are for additional analysis. 
+NB. The notebooks Dataset_statistics and Get_valid_locations are for additional analysis. 
 
 ---
 
+## Contributing
+
+Feel free to help out! [Open an issue](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Analysis/issues), submit a [PR](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Analysis/pulls) or [contact us](https://amsterdamintelligence.com/contact/).
+
+---
+
+## Acknowledgements
+
 This repository was created by [Amsterdam Intelligence](https://amsterdamintelligence.com/) for the City of Amsterdam.
+
+---
+
+## License 
+
+This project is licensed under the terms of the European Union Public License 1.2 (EUPL-1.2).
