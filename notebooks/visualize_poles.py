@@ -5,6 +5,7 @@ import laspy
 from upc_analysis import visualization
 import multiprocessing
 import config as cf
+#import config_azure as cf
 
 # Load poles data
 poles_df = pd.read_csv(cf.output_file_filter)
