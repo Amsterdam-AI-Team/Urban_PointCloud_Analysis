@@ -2,8 +2,7 @@ import numpy as np
 import logging
 import matplotlib.pyplot as plt
 
-# from upcp.labels import Labels
-from labels import Labels
+from labels import Labels  #from upcp.labels import Labels 
 from upcp.utils import math_utils
 from upcp.utils import clip_utils
 import laspy
@@ -104,11 +103,13 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
         label_mask = labels == label
         label_str = Labels.get_str(label)
 
+        # Use original (rgb) colors or color by class
         if colors is not None:
             my_colors = colors[label_mask]
         else:
             my_colors = CLASS_COLORS[label_str]
 
+        # Plot point cloud data
         ax1.scatter(xs[label_mask], zs[label_mask]-np.min(zs),
                     c=my_colors, marker='.', edgecolors='none',
                     label=label_str, s=size)
@@ -117,13 +118,12 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
         ax3.scatter(xs[label_mask], ys[label_mask], zs[label_mask],
                     c=my_colors, marker='.', edgecolors='none', alpha=0.1)
 
+        # Plot pole fit
         if estimate is not None:
             ax1.plot(estimate[:, 0], estimate[:, 2]-[np.min(zs), np.min(zs)],
                      c='red', linewidth=1, alpha=0.7, label='Estimate')
             ax2.plot(estimate[:, 1], estimate[:, 2]-[np.min(zs), np.min(zs)],
                      c='red', linewidth=1, alpha=0.7)
-            # ax3.plot(estimate[:, 0], estimate[:, 1], estimate[:, 2],
-            #          c='red', linewidth=3, alpha=1)
 
     ax1.set_aspect('equal')
     ax2.set_aspect('equal')
@@ -132,6 +132,7 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
     ax3.yaxis.set_ticklabels([])
     ax3.dist = 8
 
+    # Add legend if coloring by class
     if colors is None:
         handles, labels = ax1.get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
@@ -170,11 +171,13 @@ def generate_png_single_axis(identifier, points, labels, write_path, colors=None
         else:
             size = 1
 
+        # Use original (rgb) colors or color by class
         if colors is not None:
             my_colors = colors[label_mask]
         else:
             my_colors = CLASS_COLORS[label_str]
         
+        # Plot point cloud data
         plt.scatter(axis_hor[label_mask], axis_ver[label_mask],
                         c=my_colors, marker='.', edgecolors='none',
                         label=label_str, s=size)

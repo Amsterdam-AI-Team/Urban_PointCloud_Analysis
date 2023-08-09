@@ -3,16 +3,14 @@ import logging
 from numba import jit
 
 from sklearn.decomposition import PCA
-#from sklearn.cluster import DBSCAN 
-from sklearn.cluster import OPTICS
+#from sklearn.cluster import OPTICS
 from upcp.region_growing import LabelConnectedComp
 
 from shapely.geometry import Point
 import smallestenclosingcircle
 import geopandas as gpd
 
-#from upcp.labels import Labels  # TODO change back with the below
-from labels import Labels
+from labels import Labels  #from upcp.labels import Labels 
 from upcp.utils.interpolation import FastGridInterpolator
 from upcp.utils import clip_utils
 from upcp.utils import math_utils
@@ -255,24 +253,24 @@ class PoleExtractor():
 
 
                 # Ignore if cluster is smaller than 1 meter and directly attached to the ground to reduce false positives
-                if (np.abs(np.abs(ground_est) - np.abs(z_min)) > 0.25 or (z_max-z_min) > 1) or np.isnan(ground_est) or ground_est == None: # TODO: put this filter outside function, like others
+                if (np.abs(np.abs(ground_est) - np.abs(z_min)) > 0.25 or (z_max-z_min) > 1) or np.isnan(ground_est) or ground_est == None:
                     pole, pole_debug = self._extract_pole(
                                         points[mask_ids[noise_filter]][cc_mask],
                                         ground_est)
                     dims = tuple(round(x, 2) for x in pole)
 
                     # Calculate mean color values and radius of cluster
-                    pnt_idxs_top_half = np.where(points[mask_ids[noise_filter]][cc_mask, 2:] > (dims[2] + (0.5*dims[6])))[0] # added
-                    if len(pnt_idxs_top_half) > 50: # added
-                        pole_colors = colors[mask_ids[noise_filter]][cc_mask][pnt_idxs_top_half] # added
+                    pnt_idxs_top_half = np.where(points[mask_ids[noise_filter]][cc_mask, 2:] > (dims[2] + (0.5*dims[6])))[0]
+                    if len(pnt_idxs_top_half) > 50:
+                        pole_colors = colors[mask_ids[noise_filter]][cc_mask][pnt_idxs_top_half]
                         m_red, m_green, m_blue = np.mean(pole_colors[:,0]), \
-                                            np.mean(pole_colors[:,1]), np.mean(pole_colors[:,2]) # added
-                        _, _, radius = smallestenclosingcircle.make_circle(points[mask_ids[noise_filter]][cc_mask, 0:2][pnt_idxs_top_half]) # added
+                                            np.mean(pole_colors[:,1]), np.mean(pole_colors[:,2])
+                        _, _, radius = smallestenclosingcircle.make_circle(points[mask_ids[noise_filter]][cc_mask, 0:2][pnt_idxs_top_half])
                     else:
-                        pole_colors = colors[mask_ids[noise_filter]][cc_mask] # added
+                        pole_colors = colors[mask_ids[noise_filter]][cc_mask]
                         m_red, m_green, m_blue = np.mean(pole_colors[:,0]), \
-                                        np.mean(pole_colors[:,1]), np.mean(pole_colors[:,2]) # added
-                        _, _, radius = smallestenclosingcircle.make_circle(points[mask_ids[noise_filter]][cc_mask, 0:2]) # added
+                                        np.mean(pole_colors[:,1]), np.mean(pole_colors[:,2])
+                        _, _, radius = smallestenclosingcircle.make_circle(points[mask_ids[noise_filter]][cc_mask, 0:2])
                     proba = np.mean(probabilities[mask_ids[noise_filter]][cc_mask])
                     debug = f'{ground_debug}_{pole_debug}'
                     in_building = 0
@@ -282,11 +280,29 @@ class PoleExtractor():
                             in_building = 1
                             break
                     dims = (*dims, round(m_red, 2), round(m_green, 2), round(m_blue, 2), round(radius, 3), round(proba, 2), 
-                            n_points, in_building, debug) # adjusted
+                            n_points, in_building, debug)
                     pole_locations.append(dims)
 
         return pole_locations
-        
+
+
+class TimeOut:
+    """force timing out for things that get stuck"""
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        """handle timeout"""
+        raise TimeoutError(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
+
 
 def remove_tree_poles(filename_trees, poles_df, max_tree_dist, tree_area=None):
     # Get trees data
@@ -307,21 +323,3 @@ def remove_tree_poles(filename_trees, poles_df, max_tree_dist, tree_area=None):
     # Remove poles that are within buffered trees
     poles_df = poles_df[~poles_df.index.isin(gdf_sjoin.index)]
     return poles_df
-
-
-class TimeOut:
-    """force timing out for things that get stuck"""
-    def __init__(self, seconds=1, error_message='Timeout'):
-        self.seconds = seconds
-        self.error_message = error_message
-
-    def handle_timeout(self, signum, frame):
-        """handle timeout"""
-        raise TimeoutError(self.error_message)
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self.handle_timeout)
-        signal.alarm(self.seconds)
-
-    def __exit__(self, type, value, traceback):
-        signal.alarm(0)
