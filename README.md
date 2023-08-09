@@ -2,7 +2,7 @@
 
 This repository contains methods for the **automatic extraction of urban street furniture** from labeled PointClouds. It serves as a post-processing toolbox for our [data fusion labeling approach](https://github.com/Amsterdam-AI-Team/Urban_PointCloud_Processing), but it can also be used for point clouds that were labeled manually or by semantic segmentation algorithms, with minor modifications.
 
-This is very much work in progress: for now, we only provide code to extract the location of pole-like objects. Further methods to extract other types of street furniture will follow. For more background on this project, please have a look at our accompanying [blog post](https://amsterdamintelligence.com/posts/locating-street-lights-in-point-clouds-using-deep-learning).
+This is work in progress: for now, we only provide code to extract the location of pole-like objects. Further methods to extract other types of street furniture will follow. For more background on this project, please have a look at our accompanying [blog post](https://amsterdamintelligence.com/posts/locating-street-lights-in-point-clouds-using-deep-learning).
 
 <figure align="center">
   <img
@@ -62,7 +62,7 @@ We provide tutorial [notebooks](notebooks) that demonstrate how the tools can be
 2. Run Visualize_poles.ipynb (or visualize_poles.py) to create images for each pole. It returns 3 images per pole.
 3. Run the [pole tagger tool](https://github.com/Amsterdam-AI-Team/pole_tagger) to check and correct all individual poles visually.
 
-NB. The notebooks Dataset_statistics and Get_valid_locations are for additional analysis. 
+NB. The notebooks Dataset_statistics is for additional analysis. 
 
 ---
 
