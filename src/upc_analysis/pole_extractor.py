@@ -17,6 +17,8 @@ from upcp.utils.interpolation import FastGridInterpolator
 from upcp.utils import clip_utils
 from upcp.utils import math_utils
 
+import signal
+
 logger = logging.getLogger(__name__)
  
     
@@ -305,3 +307,21 @@ def remove_tree_poles(filename_trees, poles_df, max_tree_dist, tree_area=None):
     # Remove poles that are within buffered trees
     poles_df = poles_df[~poles_df.index.isin(gdf_sjoin.index)]
     return poles_df
+
+
+class TimeOut:
+    """force timing out for things that get stuck"""
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        """handle timeout"""
+        raise TimeoutError(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
