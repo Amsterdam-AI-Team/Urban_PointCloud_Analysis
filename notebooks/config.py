@@ -1,20 +1,20 @@
 # Input paths
-base_folder = '../datasets'
+base_folder = "../datasets"
 
-dataset_folder = f'{base_folder}/pointcloud/'  # folder with point clouds
-pred_folder = f'{base_folder}/predictions/'  # folder with predictions as npz files
-prefix = 'filtered_'
-prefix_pred = 'pred_'
+dataset_folder = f"{base_folder}/pointcloud/"  # folder with point clouds
+pred_folder = f"{base_folder}/predictions/"  # folder with predictions as npz files
+prefix = "filtered_"
+prefix_pred = "pred_"
 
-ahn_data_folder = f'{base_folder}/ahn/'
-bgt_building_file = f'{base_folder}/bgt/bgt_buildings_demo.csv'
-trees_file = f'{base_folder}/bgt/bgt_trees_demo.gpkg'
+ahn_data_folder = f"{base_folder}/ahn/"
+bgt_building_file = f"{base_folder}/bgt/bgt_buildings_demo.csv"
+trees_file = f"{base_folder}/bgt/bgt_trees_demo.gpkg"
 tree_area = None
 
 # Output paths
-output_file = f'{base_folder}/poles_extracted.csv'
-output_file_filter = f'{base_folder}/poles_extracted_filtered.csv'
-img_out_folder = f'{base_folder}/images/'
+output_file = f"{base_folder}/poles_extracted.csv"
+output_file_filter = f"{base_folder}/poles_extracted_filtered.csv"
+img_out_folder = f"{base_folder}/images/"
 
 # Define the class we are interested in
 target_label = 60
