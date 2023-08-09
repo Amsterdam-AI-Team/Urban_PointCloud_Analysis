@@ -1,3 +1,8 @@
+"""
+In order to verify the results and spot potential issues, we visualize all individual objects. 
+The visualization renders the object from two directions (X and Y axis), along with a 3D projection.
+"""
+
 import config as cf  # use config or config_azure
 import pandas as pd
 import set_path

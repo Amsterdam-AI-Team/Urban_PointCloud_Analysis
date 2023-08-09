@@ -1,4 +1,5 @@
-# Helper script to allow importing from parent folder.
+""" Helper script to allow importing from parent folder."""
+
 import os
 import sys
 

@@ -1,5 +1,7 @@
-# Urban_PointCloud_Processing by Amsterdam Intelligence, GPL-3.0 license
-
+"""
+Provides a link between class label and name
+From Urban_PointCloud_Processing by Amsterdam Intelligence, GPL-3.0 license
+"""
 
 class Labels:
     """Convenience class for label codes."""

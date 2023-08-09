@@ -1,3 +1,13 @@
+"""
+This module contains the tools to visualize extracted poles 
+(demonstrated in Visualize_poles.ipynb). 
+If consists of a dictionary of class colors and the functions: 
+get_mask_for_obj()
+generate_png_all_axes()
+generate_png_single_axis()
+create_images_for_poles()
+"""
+
 import logging
 import multiprocessing
 
@@ -82,6 +92,26 @@ def get_mask_for_obj(points, obj_loc, obj_top_z):
 def generate_png_all_axes(
     identifier, points, labels, write_path, colors=None, estimate=None, show_image=False
 ):
+    """
+    Create and store image of extracted poles, with x, y and 3D view.
+    
+    Parameters
+    ----------
+    identifier :
+        To identify object
+    points :
+        Locations in the point cloud
+    labels :
+        The predicted classes of the points
+    write_path :
+        Location to store the image
+    colors : optional
+        The rgb colors of the points
+    estimate : optional
+        The fit of the object
+    show_image: optional
+        Boolean to indicate whether to also show the image
+    """
     xs = points[:, 0]
     ys = points[:, 1]
     zs = points[:, 2]
@@ -186,6 +216,25 @@ def generate_png_all_axes(
 
 
 def generate_png_single_axis(identifier, points, labels, write_path, colors=None, plot_axis="x"):
+    """
+    Create and store image of extracted poles, with x or y view.
+    
+    Parameters
+    ----------
+    identifier :
+        To identify object
+    points :
+        Locations in the point cloud
+    labels :
+        The predicted classes of the points
+    write_path :
+        Location to store the image
+    colors : optional
+        The rgb colors of the points
+    plot_axis : optional
+        Which axis to plot ("x" or "y")
+    """
+    
     if plot_axis == "x":
         axis_hor = points[:, 0]
     elif plot_axis == "y":
@@ -250,6 +299,25 @@ def generate_png_single_axis(identifier, points, labels, write_path, colors=None
 def create_images_for_poles(
     poles_df, dataset_folder, pred_folder, img_out_folder, prefix, prefix_pred
 ):
+    """
+    Loop to create and store all image of extracted poles.
+    
+    Parameters
+    ----------
+    poles_df :
+        Pandas dataframe with all extracted poles
+    dataset_folder :
+        Folder where the data is stored
+    pred_folder :
+        Subfolder where the predictions are stored
+    img_out_folder :
+        Location to store the images
+    prefix :
+        Prefix of pointcloud file (points)
+    prefix_pred :
+        Prefix of pointcloud file (predicted labels)
+    """
+
     # Save png of object x, y and 3d axis
     open_tile = []
     for idx, obj in poles_df.iterrows():

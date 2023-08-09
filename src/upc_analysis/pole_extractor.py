@@ -1,3 +1,11 @@
+"""
+This module contains the tools to extract poles (demonstrated in Extract_poles.ipynb). 
+Most importantly, it consist of the PoleExtractor class. 
+This contains the function get_pole_locations() (and extract_poles() which it uses).
+The module also contains some function that deal with timing out, 
+and a function to filter out poles that are actually trees. 
+"""
+
 import logging
 import signal
 
@@ -330,6 +338,28 @@ class TimeOut:
 
 
 def remove_tree_poles(filename_trees, poles_df, max_tree_dist, tree_area=None):
+    """
+    Filter out (misclassified) poles that are actually trees.
+    
+    Parameters
+    ----------
+    filename_trees : str
+        The name of the file that contains the locations of trees
+    poles_df : pandas Dataframe
+        An overview of all extracted poles and their properties
+    max_tree_dist : float
+        The maximum distance between the extracted pole and the tree,
+        for the pole to be regarded as tree and removed
+    tree_area : str, optional
+        The name of the area to consider (if available in the tree file)
+        Only to speed up processing when doing only part of large files
+
+    Returns
+    ----------
+    An overview of all extracted poles and their properties, but with 
+    poles that are very close to known trees filtered out. 
+    """
+    
     # Get trees data
     df_trees = gpd.read_file(filename_trees)
 
