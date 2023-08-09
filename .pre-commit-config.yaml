@@ -35,4 +35,4 @@ repos:
             'pep8-naming==0.13.3',
         ]
 default_language_version:
-    python: python3.9
+    python: python3.8
