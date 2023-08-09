@@ -286,18 +286,21 @@ class PoleExtractor():
         return pole_locations
         
 
-def remove_tree_poles(filename_trees, tree_area, poles_df):
+def remove_tree_poles(filename_trees, poles_df, max_tree_dist, tree_area=None):
     # Get trees data
     df_trees = gpd.read_file(filename_trees)
-    df_trees_o = df_trees[df_trees['Stadsdeel of kern'] == tree_area]
+
+    # Select only trees within area, to reduce calculations
+    if tree_area is not None:
+        df_trees = df_trees[df_trees['Stadsdeel of kern'] == tree_area]
 
     # Add buffer around trees
-    df_trees_o['buffer'] = df_trees_o['geometry'].buffer(0.3)
-    df_trees_o = df_trees_o.set_geometry('buffer')
+    df_trees['buffer'] = df_trees['geometry'].buffer(max_tree_dist)
+    df_trees = df_trees.set_geometry('buffer')
 
     # Check whether pole is in buffered trees
     poles_df = gpd.GeoDataFrame(poles_df, geometry=gpd.points_from_xy(poles_df.rd_x, poles_df.rd_y), crs='EPSG:28992')
-    gdf_sjoin = poles_df.sjoin(df_trees_o, predicate='within')
+    gdf_sjoin = poles_df.sjoin(df_trees, predicate='within')
 
     # Remove poles that are within buffered trees
     poles_df = poles_df[~poles_df.index.isin(gdf_sjoin.index)]
