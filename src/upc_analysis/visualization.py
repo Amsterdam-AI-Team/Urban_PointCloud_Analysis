@@ -1,12 +1,15 @@
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
+import laspy
+import multiprocessing
 
 from labels import Labels  #from upcp.labels import Labels 
 from upcp.utils import math_utils
 from upcp.utils import clip_utils
-import laspy
-import multiprocessing
+
+import config as cf  # use config or config_azure
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +92,14 @@ def generate_png_all_axes(identifier, points, labels, write_path, colors=None, e
     ax3 = fig.add_subplot(133, projection='3d')
 
     label_set = list(np.unique(labels))
-    if 60 in labels:
-        label_set.remove(60)
-        label_set.append(60)
+    if cf.target_label in labels:
+        label_set.remove(cf.target_label)
+        label_set.append(cf.target_label)
 
     for label in label_set:
         if label == Labels.NOISE:
             continue
-        if label == 60:
+        if label == cf.target_label:
             size = 5
         else:
             size = 1
@@ -155,9 +158,9 @@ def generate_png_single_axis(identifier, points, labels, write_path, colors=None
     axis_ver = points[:, 2]
 
     label_set = list(np.unique(labels))
-    if 60 in labels:
-        label_set.remove(60)
-        label_set.append(60)
+    if cf.target_label in labels:
+        label_set.remove(cf.target_label)
+        label_set.append(cf.target_label)
     
     for label in label_set:
         if label == Labels.NOISE:
@@ -166,7 +169,7 @@ def generate_png_single_axis(identifier, points, labels, write_path, colors=None
         label_mask = labels == label
         label_str = Labels.get_str(label)
 
-        if label == 60:
+        if label == cf.target_label:
             size = 5
         else:
             size = 1
